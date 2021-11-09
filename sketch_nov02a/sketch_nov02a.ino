@@ -25,12 +25,21 @@ const int S1_Th = 512; // センサー閾値
 const int S2_Th = 512; // センサー閾値
 const int S3_Th = 512; // センサー閾値
 
-#define SPEED 120
+#define SPEED 80
 String RESET = String("reset");
 Sleep sleep;
 unsigned long sleepTime = 8.64e+7;
 
+struct sensors {
+  bool A;
+  bool B;
+  bool C;
+  bool D;
+};
+struct sensors sensor_state;
+#define Sensor_Threshold 300
 // プロトタイプ宣言
+struct sensors Sensor();
 void Motor(bool M0_IN1, bool M0_IN2, bool M1_IN1, bool M1_IN2);
 void Stop();
 void SuperStop();
@@ -43,6 +52,7 @@ void BackRight(long  ms);
 void Back(long  ms);
 void Straight(long ms);
 void Software_reset();
+void System_stop();
 
 // the setup function runs once when you press reset or power the board
 void setup() {
@@ -68,12 +78,11 @@ void setup() {
 //******************************************  Main Routine **************************************************
 
 void loop() {
-  Left(1000);
-  Right(1000);
+  sensor_state = Sensor();
+  if (sensor_state.A + sensor_state.B + sensor_state.C + sensor_state.D) {
+    Back(500);
+  }
   User_reset();
-
-
-
 
 
 
@@ -96,6 +105,28 @@ void loop() {
 
 //******************************************  Main Routine **************************************************
 
+struct sensors Sensor() {
+  int S0, S1, S2, S3;
+  struct sensors sensor_status = {0, 0, 0, 0};
+  S0 = analogRead(pinS0);
+  Serial.print("Sensor S0: ");
+  Serial.println(S0);
+  S1 = analogRead(pinS1);
+  Serial.print("Sensor S1: ");
+  Serial.println(S1);
+  S2 = analogRead(pinS2);
+  Serial.print("Sensor S2: ");
+  Serial.println(S2);
+  S3 = analogRead(pinS3);
+  Serial.print("Sensor S3: ");
+  Serial.println(S3);
+  if (Sensor_Threshold < S0) sensor_status.A = 1;
+  if (Sensor_Threshold < S1) sensor_status.B = 1;
+  if (Sensor_Threshold < S2) sensor_status.C = 1;
+  if (Sensor_Threshold < S3) sensor_status.D = 1;
+  Serial.print(sensor_status.A);
+  return sensor_status;
+}
 void Motor(bool M0_IN1, bool M0_IN2, bool M1_IN1, bool M1_IN2) {
   analogWrite(pinM0_IN1, M0_IN1 * SPEED);
   analogWrite(pinM0_IN2, M0_IN2 * SPEED);
@@ -120,7 +151,7 @@ void Left(long  ms) {
   Serial.println("time:");
   Serial.print(time);
   while (millis() < time + ms) {
-    Motor(true, false, false, false);
+    Motor(false, true, false, false);
     User_reset();
   }
   Stop();
@@ -198,7 +229,7 @@ void Back(long  ms) {
   Serial.println("time:");
   Serial.print(time);
   while (millis() < time + ms) {
-    Motor(false, true, false, true);
+    Motor(true, false, false, true);
     User_reset();
   }
   Stop();
@@ -211,7 +242,7 @@ void Straight(long ms) {
   Serial.println("time:");
   Serial.print(time);
   while (millis() < time + ms) {
-    Motor(true, false, true, false);
+    Motor(false, true, true, false);
     User_reset();
   }
   Stop();
@@ -230,10 +261,15 @@ void User_reset() {
       Stop();
       Software_reset();
     } else if (text == 'Q') {
-      Stop();
-      Serial.println("\nQuit...");
-      sleep.pwrDownMode();
-      sleep.sleepDelay(sleepTime);
+      System_stop();
     }
   }
+}
+
+void System_stop() {
+
+  Stop();
+  Serial.println("\nQuit...");
+  sleep.pwrDownMode();
+  sleep.sleepDelay(sleepTime);
 }

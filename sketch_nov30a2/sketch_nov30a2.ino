@@ -29,7 +29,7 @@ const int S3_Th = 512; // センサー閾値
 String RESET = String("reset");
 Sleep sleep;
 unsigned long sleepTime = 8.64e+7;
-int search_line_count;
+int search_line_count = 0;
 
 
 struct sensors {
@@ -83,22 +83,45 @@ void loop() {
   sensor_state = Sensor();
   struct sensors before_state;
   if (sensors_status_equal(sensor_state, before_state)) Serial.println("Status was changed.");
+  if (sensors_status_equal(sensor_state, {0, 0, 0, 1}) || sensors_status_equal(sensor_state, {0, 0, 1, 1})) {
+    Right(50);
+    Straight(40);
+  }
+
+  if (sensors_status_equal(sensor_state, {1, 0, 0, 0}) || sensors_status_equal(sensor_state, {1, 1, 0, 0})) {
+    Left(50);
+    Straight(140);
+  }
+
+  if (sensors_status_equal(sensor_state, {0, 1, 0, 0}) || sensors_status_equal(sensor_state, {0, 0, 1, 0}) || sensors_status_equal(sensor_state, {0, 1, 1, 0})) {
+    Straight(90);
+  }
+
+  if (sensors_status_equal(sensor_state, {1, 1, 1, 1})) {
+    Stop();
+    Pause(1000);
+  }
+  if (sensors_status_equal(sensor_state, {1, 1, 1, 1}) || sensors_status_equal(sensor_state, {1, 0, 0, 1})) {
+    Stop();
+    Pause(1000);
+    SuperLeft(20);
+  }
 
   if (sensors_status_equal(sensor_state, {0, 0, 0, 0})) {
-    Back(100);
+    if (search_line_count == 0) Back(300);
     Serial.println("Line No Found");
     User_reset();
-    if (search_line_count < 4) {
+    if (search_line_count < 8) {
       SuperLeft(100);
       Stop();
       Pause(40);
       search_line_count++;
-    } else if (search_line_count < 12) {
+    } else if (search_line_count < 24) {
       SuperRight(100);
       Stop();
       Pause(40);
       search_line_count++;
-    } else if (search_line_count < 16) {
+    } else if (search_line_count < 32) {
       SuperLeft(100);
       Stop();
       Pause(40);
@@ -109,29 +132,6 @@ void loop() {
     }
   } else {
     search_line_count = 0;
-  }
-
-
-  if (sensors_status_equal(sensor_state, {1, 0, 0, 0}) || sensors_status_equal(sensor_state, {1, 1, 0, 0})) {
-    Left(20);
-    Straight(50);
-    Serial.print("A: ");
-    Serial.println("1\n\n\n");
-    Sensor();
-
-    //Left(100);
-  } else if (sensors_status_equal(sensor_state, {0, 0, 0, 1}) || sensors_status_equal(sensor_state, {0, 0, 0, 0})) {
-    Right(20);
-    Straight(50);
-    Serial.print("D: ");
-    Serial.println("1\n\n\n");
-    Sensor();
-
-    //Right(100);
-  }
-  //Pause(200);
-  if (sensors_status_equal(sensor_state, {0, 1, 1, 0})) {
-    Straight(30);
   }
 
 
